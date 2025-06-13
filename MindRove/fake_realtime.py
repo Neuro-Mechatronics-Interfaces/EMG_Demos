@@ -5,19 +5,29 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtWidgets
 from mindrove.data_filter import DataFilter, FilterTypes, DetrendOperations
 from mindrove.board_shim import (
-    # BoardShim,
+    BoardShim,
     BoardIds,
     MindRoveInputParams,
 )
 
-from fake_mindrove import FakeMindrove as BoardShim
 
 class ScrollingEMGPlot:
+    """
+    A class to visualize EMG data in real-time using PyQtGraph.
+
+    Parameters:
+        n_channels (int): Number of EMG channels to visualize.
+        duration_sec (int): Duration of data buffer in seconds.
+        refresh_ms (int): Refresh rate in milliseconds for the plot.
+        band (tuple): Frequency band for bandpass filtering (low, high).
+        y_range (tuple): Y-axis range for the plot.
+
+    """
     def __init__(self, n_channels=4, duration_sec=4, refresh_ms=50, band=(10, 500), y_range=(-500, 500)):
         # === FakeMindrove Setup ===
         self.params = MindRoveInputParams()
-        self.board_id = BoardIds.MINDROVE_WIFI_BOARD
-        self.board = BoardShim(self.board_id, None)
+        self.board_id = BoardIds.SYNTHETIC_BOARD
+        self.board = BoardShim(self.board_id, self.params)
 
         self.board.prepare_session()
         self.board.start_stream()
@@ -67,6 +77,16 @@ class ScrollingEMGPlot:
         self.app.aboutToQuit.connect(self.cleanup)
 
     def compute_rms(self, signal):
+        """
+        Compute the Root Mean Square (RMS) of a signal using a sliding window.
+
+        Args:
+            signal (np.ndarray): Input signal array.
+
+        Returns:
+            np.ndarray: RMS values computed over a sliding window.
+
+        """
         window_size = int(0.050 * self.sampling_rate)
         if len(signal) < window_size:
             return np.zeros_like(signal)
@@ -76,6 +96,16 @@ class ScrollingEMGPlot:
         return rms
 
     def update(self):
+        """
+        Update the plot with new data from the board.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        """
         data = self.board.get_board_data()
         if data.shape[1] > 0:
             rms_vector = []
@@ -100,6 +130,16 @@ class ScrollingEMGPlot:
                 self.rms_curves[i].setData(self.compute_rms(self.plot_buffers[i]))
 
     def cleanup(self):
+        """
+        Cleanup function to stop the stream and release resources.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        """
         print("Stopping stream and releasing resources.")
         self.board.stop_stream()
         self.board.release_session()
@@ -109,10 +149,12 @@ class ScrollingEMGPlot:
 
 
 if __name__ == "__main__":
+
+    # Run the Scrolling EMG Plot
     plotter = ScrollingEMGPlot(
         n_channels=4,
         duration_sec=4,
         band=(10, 240),
-        y_range=(-500, 500)
+        y_range=(-500, 500),
     )
     plotter.run()
