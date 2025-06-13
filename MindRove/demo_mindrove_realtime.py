@@ -3,10 +3,7 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtWidgets
 from mindrove.board_shim import BoardShim, BoardIds, MindRoveInputParams
-from scipy.signal import butter, lfilter, filtfilt
 from mindrove.data_filter import DataFilter, FilterTypes, DetrendOperations
-from pca_viewer import PCALiveViewer
-
 
 
 class ScrollingEMGPlot:
@@ -26,12 +23,10 @@ class ScrollingEMGPlot:
         self.buffer_size = int(duration_sec * self.sampling_rate)
         self.refresh_ms = refresh_ms
         self.rms_window = int(0.050 * self.sampling_rate)  # 50 ms RMS window
+        self.band = band
 
-        # === Bandpass Filter Coefficients (Butterworth 2nd order) ===
-        #self.b, self.a = butter(N=2, Wn=band, btype='bandpass', fs=self.sampling_rate)
-
-        # PCA Viewer
-        self.pca_viewer = PCALiveViewer(n_channels=self.n_channels)
+        # PSD parameters
+        self.psd_size = DataFilter.get_nearest_power_of_two(self.sampling_rate)
 
         # === Data Buffer ===
         self.plot_buffers = [np.zeros(self.buffer_size) for _ in range(self.n_channels)]
@@ -50,7 +45,6 @@ class ScrollingEMGPlot:
             p.setYRange(*y_range)
             p.enableAutoRange('y', True)
 
-            #curve = p.plot(pen=pg.mkPen(color='darkblue', width=2))
             raw_curve = p.plot(pen=pg.mkPen(color='blue', width=1))
             rms_curve = p.plot(pen=pg.mkPen(color='orange', width=2))
 
@@ -88,15 +82,17 @@ class ScrollingEMGPlot:
             for i, ch in enumerate(self.channel_indices):
                 raw = np.copy(data[ch])
 
-                # Filter and detrend the data
+                # Improved filtering pipeline
                 DataFilter.detrend(raw, DetrendOperations.CONSTANT.value)
-                DataFilter.perform_bandpass(raw, self.sampling_rate, 45, 90, 2, FilterTypes.BUTTERWORTH, 0)
+                DataFilter.perform_bandpass(raw, self.sampling_rate, self.band[0], self.band[1], 2,
+                                            FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandstop(raw, self.sampling_rate, 4.0, 50.0, 2,
+                                            FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandstop(raw, self.sampling_rate, 4.0, 60.0, 2,
+                                            FilterTypes.BUTTERWORTH.value, 0)
 
-                # RMS over 50ms
-                rms = self.compute_rms(raw)
-                rms_vector.append(rms[-1])  # latest value for PCA
 
-                # Scroll and update plot data
+                # Time series plotting
                 data_to_use = raw
                 num_new = min(len(data_to_use), len(self.plot_buffers[i]))
                 self.plot_buffers[i] = np.roll(self.plot_buffers[i], -num_new)
@@ -105,9 +101,7 @@ class ScrollingEMGPlot:
                 # Update curves
                 self.raw_curves[i].setData(self.plot_buffers[i])
                 self.rms_curves[i].setData(self.compute_rms(self.plot_buffers[i]))
-
-            # Update PCA viewer
-            self.pca_viewer.update(rms_vector)
+                
 
     def cleanup(self):
         print("Stopping stream and releasing resources.")
@@ -122,7 +116,7 @@ if __name__ == "__main__":
     plotter = ScrollingEMGPlot(
         n_channels=4,
         duration_sec=4,
-        band=(10, 240),
+        band=(10, 300),
         y_range=(-500, 500)
     )
     plotter.run()

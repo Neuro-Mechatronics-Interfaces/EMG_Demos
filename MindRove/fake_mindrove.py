@@ -1,11 +1,15 @@
 # fake_mindrove.py
 import numpy as np
-#
+import pandas as pd
+
+from mindrove.board_shim import BoardShim, MindRoveInputParams, BoardIds
+
 
 class FakeMindrove:
-    def __init__(self, board_id, input_params):
+    def __init__(self, board_id, params=None, file_path=None, loopback=False):
         self.board_id = board_id
-        self.input_params = input_params
+        self.file_path = file_path
+        self.loopback = loopback
         self.is_streaming = False
         self.is_session_prepared = False
         self.sampling_rate = 500  # Hz
@@ -13,11 +17,26 @@ class FakeMindrove:
         self.data_buffer = np.empty((self.num_channels, 0))
         self.rng = np.random.default_rng()
 
+        #wifi_board_id = BoardIds.MINDROVE_WIFI_BOARD
+        playback_id = BoardIds.PLAYBACK_FILE_BOARD
+
+        if params is not None:
+            params = MindRoveInputParams()
+            params.other_info = self.board_id
+            params.file = self.file_path
+
+        board = BoardShim(playback_id, params)
+        board.config_board('loopback_true')
+
+
+
     def prepare_session(self):
+        self.board.prepare_session()
         self.is_session_prepared = True
         print("FakeMindrove session prepared.")
 
     def start_stream(self, num_samples=450000, streamer_params=None):
+        self.board.start_stream()
         self.is_streaming = True
         print("FakeMindrove stream started.")
 
