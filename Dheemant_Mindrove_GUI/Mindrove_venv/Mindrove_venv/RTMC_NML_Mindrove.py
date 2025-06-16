@@ -1,0 +1,230 @@
+# ----------------------------------------------------------------------------------------------
+# USING PYQT (WORKING==PLOTTING & Recording) latest 4/1/2025
+# ----------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------
+# Adding SAVE latest 4/1/2025
+# ----------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------
+# Adding the new slice and recreating data latest 4/1/2025
+# ----------------------------------------------------------------------------------------------
+import argparse
+import logging
+import os
+import time
+import numpy as np
+import pandas as pd
+import pyqtgraph as pg
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
+
+from mindrove.board_shim import BoardShim, MindRoveInputParams, BoardIds
+from mindrove.data_filter import DataFilter, FilterTypes, WindowFunctions, DetrendOperations
+
+
+class Graph:
+    def __init__(self, board_shim):
+        # Set pyqtgraph options
+        pg.setConfigOption('background', 'w')
+        pg.setConfigOption('foreground', 'k')
+
+        self.board_shim = board_shim
+        self.board_id = board_shim.get_board_id()
+        self.exg_channels = BoardShim.get_exg_channels(self.board_id)
+        self.sampling_rate = BoardShim.get_sampling_rate(self.board_id)
+        self.update_speed_ms = 50
+        self.window_size = 4
+        self.num_points = self.window_size * self.sampling_rate
+        
+        
+        # self.buffer_size = self.num_points  # Fixed-size buffer
+        # self.data_buffer = np.zeros((len(self.exg_channels), self.buffer_size))
+        # self.timestamp_buffer = np.zeros(self.buffer_size)
+
+        # Initialize data storage
+        self.Ring_bufferCopy = np.zeros((15, 2))
+        self.data_buffer = []
+        self.last_index_processed = 0
+
+        # Create Qt application and main window
+        self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        self.win = pg.GraphicsLayoutWidget(show=True, title='Mindrove Plot')
+        self.win.resize(800, 600)
+
+        # Initialize plots
+        self._init_pens()
+        self._init_timeseries()
+        self._init_psd()
+        self._init_band_plot()
+
+        # Start update timer
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.update)
+        self.timer.start(self.update_speed_ms)
+        self.count = 0
+        self.start = 0
+
+        # Add close event to save data
+        self.app.aboutToQuit.connect(self._save_data)
+
+        self.app.exec()
+
+    def _init_pens(self):
+        self.pens = []
+        self.brushes = []
+        colors = ['#A54E4E', '#A473B6', '#5B45A4', '#2079D2', '#32B798', '#2FA537', '#9DA52F', '#A57E2F', '#A53B2F']
+        for color in colors:
+            self.pens.append(pg.mkPen({'color': color, 'width': 2}))
+            self.brushes.append(pg.mkBrush(color))
+
+    def _init_timeseries(self):
+        self.plots = []
+        self.curves = []
+        for i, channel in enumerate(self.exg_channels):
+            plot = self.win.addPlot(row=i, col=0)
+            plot.showAxis('left', False)
+            plot.setMenuEnabled('left', False)
+            plot.showAxis('bottom', False)
+            plot.setMenuEnabled('bottom', False)
+            if i == 0:
+                plot.setTitle('Time Series Plot')
+            self.plots.append(plot)
+            curve = plot.plot(pen=self.pens[i % len(self.pens)])
+            self.curves.append(curve)
+
+    def _init_psd(self):
+        self.psd_plot = self.win.addPlot(row=0, col=1, rowspan=len(self.exg_channels) // 2)
+        self.psd_plot.setTitle('PSD Plot')
+        self.psd_plot.setLogMode(False, True)
+        self.psd_curves = []
+        self.psd_size = DataFilter.get_nearest_power_of_two(self.sampling_rate)
+        for i, channel in enumerate(self.exg_channels):
+            psd_curve = self.psd_plot.plot(pen=self.pens[i % len(self.pens)])
+            self.psd_curves.append(psd_curve)
+
+    def _init_band_plot(self):
+        self.band_plot = self.win.addPlot(row=len(self.exg_channels) // 2, col=1, rowspan=len(self.exg_channels) // 2)
+        self.band_plot.setTitle('Band Power Plot')
+        self.band_plot.showAxis('left', False)
+        self.band_plot.showAxis('bottom', False)
+        x = [1, 2, 3, 4, 5]
+        y = [0, 0, 0, 0, 0]
+        self.band_bar = pg.BarGraphItem(x=x, height=y, width=0.8, brush=self.brushes[0])
+        self.band_plot.addItem(self.band_bar)
+
+    def NewData_Chunk(self,data):
+        # Calculate the new slice to process
+        new_data_start = self.last_index_processed
+        new_data_end = data.shape[1]
+
+        # Update the last processed index
+        self.last_index_processed = new_data_end
+        required_columns = [0, 1, 2, 3, 4, 5, 6, 7, 20, 21, 22, 23, 24, 25, 27]
+        # Extract the new slice of data
+        self.Ring_bufferCopy = np.hstack((self.Ring_bufferCopy,data[required_columns, new_data_start:new_data_end]))
+
+        return self.Ring_bufferCopy
+    
+    def update(self):
+        if self.board_shim.get_board_data_count() > 0:
+            data = self.board_shim.get_current_board_data(self.num_points)
+            
+            progressing_data = self.NewData_Chunk(data)[:,self.count]
+            # print(f"progressing_data{self.count}__{time.time()}: {len(progressing_data)}")
+            # self.data_buffer = np.roll(self.data_buffer, -self.num_points, axis=1)
+            # self.timestamp_buffer = np.roll(self.timestamp_buffer, -self.num_points)
+            # self.data_buffer[:, -self.num_points:] = data[self.exg_channels, :]
+            # self.timestamp_buffer[-self.num_points:] = data[-1, :]  # Assuming timestamp is the last column
+            # required_columns = [0, 1, 2, 3, 4, 5, 6, 7, 20, 21, 22, 23, 24, 25, 27]  
+            window = 100
+            # Extract required columns
+            # progressing_data = data[required_columns, :]
+            # print(progressing_data)
+            
+            window_data = self.Ring_bufferCopy[:,self.start:self.start + window]
+            # print(f"window{self.count}__{time.time()}: {np.array(window_data).shape}")
+            self.data_buffer.append(window_data)
+            self.start += 50 # FACTOR FOR LAG
+            self.count += 1 # CHANGES BASED ON FRAMES
+            
+
+            avg_bands = [0, 0, 0, 0, 0]
+            for i, channel in enumerate(self.exg_channels):
+                # Apply filters and detrend
+                DataFilter.detrend(data[channel], DetrendOperations.CONSTANT.value)
+                DataFilter.perform_bandpass(data[channel], self.sampling_rate, 10.0, 450.0, 2, FilterTypes.BUTTERWORTH.value, 0)
+                # DataFilter.perform_bandstop(data[channel], self.sampling_rate, 50.0, 4.0, 2, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandstop(data[channel], self.sampling_rate, 60.0, 4.0, 2, FilterTypes.BUTTERWORTH.value, 0)
+
+                # Update time series plot
+                self.curves[i].setData(data[channel].tolist())
+
+                if data.shape[1] > self.psd_size:
+                    # Update PSD plot
+                    # psd_data = DataFilter.get_psd_welch(
+                    #             self.data_buffer[i], self.psd_size, self.psd_size // 2,
+                    #             self.sampling_rate, WindowFunctions.BLACKMAN_HARRIS.value
+                    #             )
+                    psd_data = DataFilter.get_psd_welch(data[channel], self.psd_size, self.psd_size // 2, self.sampling_rate,
+                                                        WindowFunctions.BLACKMAN_HARRIS.value)
+                    lim = min(70, len(psd_data[0]))
+                    self.psd_curves[i].setData(psd_data[1][:lim], psd_data[0][:lim])
+
+                    # Calculate band powers
+                    avg_bands[0] += DataFilter.get_band_power(psd_data, 1.0, 4.0)
+                    avg_bands[1] += DataFilter.get_band_power(psd_data, 4.0, 8.0)
+                    avg_bands[2] += DataFilter.get_band_power(psd_data, 8.0, 13.0)
+                    avg_bands[3] += DataFilter.get_band_power(psd_data, 13.0, 30.0)
+                    avg_bands[4] += DataFilter.get_band_power(psd_data, 30.0, 50.0)
+
+            avg_bands = [x / len(self.exg_channels) for x in avg_bands]
+            self.band_bar.setOpts(height=avg_bands)
+            self.app.processEvents()
+
+    def _save_data(self):
+        # Combine collected data into a single matrix
+        all_data = self.board_shim.get_board_data()
+        
+        # Specify columns to save
+        required_columns = [0, 1, 2, 3, 4, 5, 6, 7, 20, 21, 22, 23, 24, 25, 27]  
+        column_labels = [
+            "Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", 
+            "Channel_6", "Channel_7", "Channel_8", 
+            "AcX", "AcY", "AcZ", "GyX", "GyY", "GyZ", "Timestamp"
+        ]
+        
+        # Extract required columns
+        filtered_data = all_data[required_columns, :]
+        
+        # Create a DataFrame
+        df = pd.DataFrame(filtered_data.T, columns=column_labels)
+        # Define output file
+        output_dir = "mindrove_data_16_1_2025"
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, "Session_2_katie.csv")
+
+        
+        # Save to CSV
+        df.to_csv(output_file, index=False)
+        print(f"Data successfully saved to {output_file}")
+
+
+def main():
+    # Enable logging
+    BoardShim.enable_dev_board_logger()
+    logging.basicConfig(level=logging.DEBUG)
+
+    params = MindRoveInputParams()
+
+    try:
+        board_shim = BoardShim(BoardIds.MINDROVE_WIFI_BOARD, params)
+        board_shim.prepare_session()
+        board_shim.start_stream()
+        Graph(board_shim)
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+    finally:
+        if board_shim.is_prepared():
+            board_shim.release_session()
+
+
+if __name__ == '__main__':
+    main()

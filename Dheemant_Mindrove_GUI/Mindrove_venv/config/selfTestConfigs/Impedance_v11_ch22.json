@@ -1,0 +1,118 @@
+{
+    "PcConfig": {
+        "name": "Impedance_v11_ch22",
+        "postProcessingAlgorithmsSize": "4",
+        "postProcessingAlgorithms0": "1",
+        "postProcessingAlgorithms1": "2",
+        "postProcessingAlgorithms2": "3",
+        "postProcessingAlgorithms3": "0",
+        "resultAlgorithm": "4"
+    },
+    "PrepareSettings": {
+        "type": "1",
+        "sequenceFlags": "196"
+    },
+    "Init": {
+        "ltcChannelsEnabled": "62",
+        "ad7689SpiMode": "1",
+        "ad7689Config": {
+            "channelSequence": "0",
+            "inputChannel": "1"
+        }
+    },
+    "DataAcquisition": {
+        "primarySwitchConfig": {
+            "adgs5414SwitchConfig": "209",
+            "ulmRefElectrodesMask": "0",
+            "ulmRecordState": "0",
+            "ulmStimPState": "2097152",
+            "ulmStimMState": "4292870143",
+            "ulmDischargeState": "0",
+            "ulmLfpState": "4294967295",
+            "ulmSpikeState": "0"
+        },
+        "secondarySwitchConfig": {
+            "adgs5414SwitchConfig": "0",
+            "ulmRefElectrodesMask": "0",
+            "ulmRecordState": "0",
+            "ulmStimPState": "0",
+            "ulmStimMState": "0",
+            "ulmDischargeState": "0",
+            "ulmLfpState": "0",
+            "ulmSpikeState": "0"
+        },
+        "csiConfig": {
+            "amplitude": "20",
+            "pulsewidth": "4",
+            "dz0": "3",
+            "dz1": "0",
+            "nrOfStimPulses": "1",
+            "nrOfTherapyPulses": "5",
+            "therapyDelay": "1",
+            "boost": "false",
+            "nrOfMasterPulses": "1",
+            "dz2": "0",
+            "dz3": "0",
+            "delta": "0",
+            "ramp": "false"
+        },
+        "sequenceDelay0": "40770",
+        "sequenceDelay1": "0",
+        "csi021Channel": "1"
+    },
+    "SignalProcessing": {
+        "roiSize": "11",
+        "medianSize": "5",
+        "zeroLineSliceIndex": "0",
+        "roiStartIndex0": "20",
+        "roiStartIndex1": "74",
+        "roiStartIndex2": "128",
+        "roiStartIndex3": "182",
+        "roiStartIndex4": "236",
+        "roiStartIndex5": "1",
+        "roiStartIndex6": "1",
+        "roiStartIndex7": "1",
+        "roiStartIndex8": "1",
+        "roiStartIndex9": "1"
+    },
+    "SignalIntegrity": {
+        "maxNumIterations": "1"
+    },
+    "SliceConfig": {
+        "numSlices": "0",
+        "signalSlice0": {
+            "startIndex": "52428",
+            "endIndex": "52428",
+            "maxDeviation": "52428",
+            "checkSliceConvergency": "204"
+        },
+        "signalSlice1": {
+            "startIndex": "52428",
+            "endIndex": "52428",
+            "maxDeviation": "52428",
+            "checkSliceConvergency": "204"
+        },
+        "signalSlice2": {
+            "startIndex": "52428",
+            "endIndex": "52428",
+            "maxDeviation": "52428",
+            "checkSliceConvergency": "204"
+        },
+        "signalSlice3": {
+            "startIndex": "52428",
+            "endIndex": "52428",
+            "maxDeviation": "52428",
+            "checkSliceConvergency": "204"
+        },
+        "signalSlice4": {
+            "startIndex": "52428",
+            "endIndex": "52428",
+            "maxDeviation": "52428",
+            "checkSliceConvergency": "204"
+        }
+    },
+    "General": {
+        "SettingsFileVersion": "1.1"
+    },
+    "Checksum": "3045409723"
+}
