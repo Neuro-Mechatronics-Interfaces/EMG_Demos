@@ -1,0 +1,12 @@
+pygame
+pandas
+mindrove
+serial
+pyserial
+matplotlib
+joblib
+scipy
+pyqt5
+pyqtgraph
+tensorflow
+scikit-learn
