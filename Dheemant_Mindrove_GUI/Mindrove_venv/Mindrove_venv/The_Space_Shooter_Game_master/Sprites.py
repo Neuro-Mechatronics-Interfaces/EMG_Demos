@@ -11,9 +11,9 @@ PLAYER=[PGIMLOAD(path+'player.png'),PGIMLOAD(path+'playerLeft.png'),PGIMLOAD(pat
 #loads images of meteorites and enemy
 MOBS=[PGIMLOAD(path+'enemyShip.png'),PGIMLOAD(path+'enemyUFO.png'),PGIMLOAD(path+'meteorBig.png'),PGIMLOAD(path+'meteorSmall.png')]
 #loads images for explosion of meteorites and enemies
-ExplosionList=[pg.image.load(f'E:\Mindrove_venv\Mindrove_venv\The_Space_Shooter_Game_master\Explosion{os.sep}explosion{int(x)}.png') for x in range(1,15)]
+ExplosionList=[pg.image.load(f'D:\Mindrove_NML_Dheemant_June\EMG_Demos\Dheemant_Mindrove_GUI\Mindrove_venv\Mindrove_venv\The_Space_Shooter_Game_master\Explosion{os.sep}explosion{int(x)}.png') for x in range(1,15)]
 #loads images for explosion of player
-SelfExplosionList=[pg.image.load(f'E:\Mindrove_venv\Mindrove_venv\The_Space_Shooter_Game_master\Qexplosion{os.sep}{int(x)}.png') for x in range(1,21)]
+SelfExplosionList=[pg.image.load(f'D:\Mindrove_NML_Dheemant_June\EMG_Demos\Dheemant_Mindrove_GUI\Mindrove_venv\Mindrove_venv\The_Space_Shooter_Game_master\Qexplosion{os.sep}{int(x)}.png') for x in range(1,21)]
 
 class Player(pg.sprite.Sprite):
     """This class extends Sprite class of pygame that is in sprite module of pygame library and overrides update method of Sprite class.

@@ -162,7 +162,7 @@ class SignalProcessor:
             pre_rectification_buffer = self.preprocess_filters(raw_buffer)
             pre_rectification_buffer_ = pre_rectification_buffer[samples_to_chop:]
             preprocessed_buffer = self.rectify_emg(pre_rectification_buffer_)
-            preprocessed_buffer_stream = self.rectify_emg(self.preprocess_filters_stream(raw_buffers_stream))
+            preprocessed_buffer_stream = self.preprocess_filters_stream(raw_buffers_stream)
 
             pre_rectification_buffers[channel] = pre_rectification_buffer_
             preprocessed_buffers[channel] = preprocessed_buffer
@@ -170,13 +170,13 @@ class SignalProcessor:
 
             # Step 3: RMS smoothing
             smoothed_buffer = self.moving_window_rms(np.array(preprocessed_buffer), window_size)
-            smoothed_buffer_stream = self.moving_window_rms(np.array(preprocessed_buffer_stream), window_size)
+            smoothed_buffer_stream = self.moving_window_rms(np.array(self.rectify_emg(preprocessed_buffer_stream)), window_size)
 
             smoothed_buffers[channel] = smoothed_buffer
             smoothed_buffers_stream[channel] = smoothed_buffer_stream
             # self.filtered_buffer[channel] = smoothed_buffer
 
-        return smoothed_buffers, preprocessed_buffers, smoothed_buffers_stream, pre_rectification_buffers
+        return smoothed_buffers, preprocessed_buffers, smoothed_buffers_stream, pre_rectification_buffers, preprocessed_buffers_stream
 
     
     

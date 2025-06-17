@@ -566,7 +566,7 @@ class MyApp(QMainWindow):
         # --- END ADDITION ---
 
         logo_label = QLabel()
-        image = QPixmap("E:/Mindrove_venv/Mindrove_venv/NML_Logo_.png")
+        image = QPixmap("D:/Mindrove_NML_Dheemant_June/EMG_Demos/Dheemant_Mindrove_GUI/Mindrove_venv/Mindrove_venv/NML_Logo_.png")
         image = image.scaledToWidth(200, Qt.SmoothTransformation)
         painter = QPainter(image)
         painter.setOpacity(0.3)  
@@ -589,6 +589,7 @@ class MyApp(QMainWindow):
         channel_colors = ['r', 'g', 'b', 'c', 'm', 'y', 'orange', 'white']
         self.graph_widgets = []
         self.data_lines = []
+        self.data_filt_lines = []
         
         # --- ADDED FOR ROTATION ---
         # Store proxies to update their positions later
@@ -608,14 +609,19 @@ class MyApp(QMainWindow):
             graph_widget.setMouseEnabled(x=False, y=False)
             graph_widget.setFrameStyle(0)
             graph_widget.setBackground('k')
-            graph_widget.setYRange(0, 200.0)
+            graph_widget.setYRange(-200, 200.0)
             graph_widget.setXRange(0, 2500)
             graph_widget.setFixedSize(300, 200)
 
             pen = pg.mkPen(color=channel_colors[channel % len(channel_colors)], width=2)
+            channel_colors_s = ['white', 'white', 'white', 'white', 'white', 'white', 'white', 'white']
+            pen_s = pg.mkPen(color=channel_colors_s[channel % len(channel_colors_s)], width=2)
+            data_filt_line = graph_widget.plot(pen=pen_s)
             data_line = graph_widget.plot(pen=pen)
 
             self.graph_widgets.append(graph_widget)
+            
+            self.data_filt_lines.append(data_filt_line)
             self.data_lines.append(data_line)
 
             # --- MODIFIED FOR ROTATION ---
@@ -831,7 +837,7 @@ class MyApp(QMainWindow):
 
         # TODO: This will go into its own timer loop, where you now have only periodic calls of
         #       self.processor.preproc_loop_buffer()
-        self.smoothed_buffers, self.filtered_buffers, self.smoothed_buffers_stream, self.pre_rectification_buffers = self.processor.preproc_loop_buffer(self.window_size)
+        self.smoothed_buffers, self.filtered_buffers, self.smoothed_buffers_stream, self.pre_rectification_buffers, self.preprocessed_buffers_stream = self.processor.preproc_loop_buffer(self.window_size)
 
 
         # Extract Baseline and MVC values
@@ -1009,8 +1015,8 @@ class MyApp(QMainWindow):
                         # self.mlp_model = joblib.load("E:\Mindrove_venv\Mindrove_venv\MLP_94_2025_06_12_data_2025_06_12_Dheemant_MAV_ZC_PCA_V1_0_FLEX_EXTEN_INDEX_0.pkl") # Spacecraft Game
                         # self.pca_model = joblib.load("E:\Mindrove_venv\Mindrove_venv\PCA_FLEX_EXTEN_INDEX_data_2025_06_12_Dheemant_MAV_ZC_PCA_V1_0.pkl")
 
-                        self.mlp_model = joblib.load("E:\Mindrove_venv\MLP_Classifier_90_data_2025_06_16_Wflex_WExten_FIndex_0.pkl") # Spacecraft Game
-                        self.pca_model = joblib.load("E:\Mindrove_venv\PCA_for_MLP_Classifier_data_2025_06_16_Wflex_WExten_FIndex_0.pkl")
+                        self.mlp_model = joblib.load("D:\Mindrove_NML_Dheemant_June\EMG_Demos\Dheemant_Mindrove_GUI\Mindrove_venv\MLP_Classifier_95_data_2025_06_16_t_Wflex_WExten_FIndex_0.pkl") # Spacecraft Game
+                        self.pca_model = joblib.load("D:\Mindrove_NML_Dheemant_June\EMG_Demos\Dheemant_Mindrove_GUI\Mindrove_venv\PCA_for_MLP_Classifier_data_2025_06_16_t_Wflex_WExten_FIndex_0.pkl")
 
                         print("Default MLP model loaded.")
                     except Exception as e:
@@ -1079,9 +1085,14 @@ class MyApp(QMainWindow):
         # --- Plot buffer_stream data ---
         for channel in range(self.sensor.num_channels):
             smoothed_buffers_stream_chan = self.smoothed_buffers_stream[channel]
+            preprocessed_buffers_stream_chan = self.preprocessed_buffers_stream[channel]
+
             x_vals = range(len(smoothed_buffers_stream_chan))
+            x_vals_ = range(len(preprocessed_buffers_stream_chan))
             y_vals = smoothed_buffers_stream_chan
+            y_vals_ = preprocessed_buffers_stream_chan
             self.data_lines[channel].setData(x_vals, y_vals)
+            self.data_filt_lines[channel].setData(x_vals_,y_vals_)
 
             
             self.graph_widgets[channel].setXRange(0, 2500)

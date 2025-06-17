@@ -9,4 +9,4 @@ TEXTCOLOR=(255,255,255)  #TextColor of player's score
 
 PGIMLOAD=pg.image.load  #typedefines the pygame's image module's load method
 OSPJ=os.path.join  #typedefine os module's path.join method
-path='E:\Mindrove_venv\Mindrove_venv\The_Space_Shooter_Game_master\spaceArt'+os.sep+'png'+os.sep  #sets path of all sprites
+path='D:\Mindrove_NML_Dheemant_June\EMG_Demos\Dheemant_Mindrove_GUI\Mindrove_venv\Mindrove_venv\The_Space_Shooter_Game_master\spaceArt'+os.sep+'png'+os.sep  #sets path of all sprites
