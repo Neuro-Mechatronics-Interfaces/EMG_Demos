@@ -84,12 +84,12 @@ if __name__ == "__main__":
     #   - Add a timestamp column if missing (using UNIX time)
     #   - Pad to 32 columns if needed
     # Set `delimiter` to match your original file (',' for CSV, '\t' for tab-delimited).
-    enforce_mindrove_format(
-        file_path,
-        delimiter='\t',  # Original delimiter in your data file
-        new_delimiter='\t',  # Output delimiter required by MindRove
-        has_headers=True  # Set to True if your file includes a header row
-    )
+    # enforce_mindrove_format(
+    #     file_path,
+    #     delimiter='\t',  # Original delimiter in your data file
+    #     new_delimiter='\t',  # Output delimiter required by MindRove
+    #     has_headers=True  # Set to True if your file includes a header row
+    # )
 
     # 3. Set up MindRove for playback
     board = setup_playback_board(file_path, loopback=False)
